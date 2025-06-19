@@ -48,11 +48,13 @@ if user_reply:
     st.header("5. Feedback Oratis")
 
     prompt = f"""
-    Voici une méthode de recadrage appelée DESC (Décrire, Exprimer, Spécifier, Conséquences).
-    Analyse le message suivant selon cette méthode, et fais un retour bienveillant à l'utilisateur.
+   Tu es un formateur Marcopolo. Tu vas évaluer un message selon la méthode {detected_method}.
 
     Message de l'utilisateur :
     """{user_reply}"""
+    Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui s'il suit bien les étapes de la méthode {detected_method}, 
+    ce qui est clair, ce qu’il pourrait améliorer, et comment il pourrait formuler autrement si besoin.
+    """
 
     Ton retour doit :
     - Dire si les 4 parties sont présentes
