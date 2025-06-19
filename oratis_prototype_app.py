@@ -57,24 +57,7 @@ if user_question:
     st.header("4. Mise en situation")
     user_reply = st.text_area("Imagine que tu parles à ton collaborateur. Que lui dirais-tu ?", height=150)
 
-    # Phase 5 : Feedback IA
- if user_reply:
-    st.header("5. Feedback Oratis")
-
-    prompt_feedback = f"""Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
-Message de l'utilisateur :
-{user_reply}
-
-Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui ce qui fonctionne,
-ce qui pourrait être amélioré, et propose des formulations plus efficaces si besoin.
-"""
-
-    response_feedback = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[{"role": "user", "content": prompt_feedback}],
-        temperature=0.7,
-        max_tokens=500,
-    )
-
-    feedback_text = response_feedback.choices[0].message.content
-    st.success(feedback_text)
+ # Phase 5 : Feedback IA (fixe pour l’instant)
+    if user_reply:
+        st.header("5. Feedback Oratis")
+        st.success("✅ Tu as bien structuré ta réponse. Tu peux renforcer l’impact en ajoutant ton ressenti ou les bénéfices attendus.")
