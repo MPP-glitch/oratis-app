@@ -52,9 +52,7 @@ if user_reply:
 
     Message de l'utilisateur :
     """{user_reply}"""
-    Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui s'il suit bien les étapes de la méthode {detected_method}, 
-    ce qui est clair, ce qu’il pourrait améliorer, et comment il pourrait formuler autrement si besoin.
-    """
+
 
     Ton retour doit :
     - Dire si les 4 parties sont présentes
