@@ -41,7 +41,31 @@ if user_question:
     st.header("4. Mise en situation")
     user_reply = st.text_area("Imagine que tu t’adresses à ton interlocuteur. Que lui dirais-tu ?", height=150)
 
-    # Phase 5 : Feedback IA (fixe pour l’instant)
-    if user_reply:
-        st.header("5. Feedback Oratis")
-        st.success("✅ Tu as bien structuré ta réponse. Tu peux renforcer l’impact en ajoutant ton ressenti ou les bénéfices attendus.")
+    # Phase 5 : Feedback IA personnalisé avec GPT-4 Turbo
+import openai
+
+if user_reply:
+    st.header("5. Feedback Oratis")
+
+    prompt = f"""
+    Voici une méthode de recadrage appelée DESC (Décrire, Exprimer, Spécifier, Conséquences).
+    Analyse le message suivant selon cette méthode, et fais un retour bienveillant à l'utilisateur.
+
+    Message de l'utilisateur :
+    """{user_reply}"""
+
+    Ton retour doit :
+    - Dire si les 4 parties sont présentes
+    - Donner un conseil de formulation s’il manque quelque chose
+    - Être bienveillant, structurant, formateur
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=500,
+    )
+
+    feedback = response.choices[0].message.content
+    st.success(feedback)
