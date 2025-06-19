@@ -1,71 +1,81 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 
-st.image("Marcopolo_logo_def.png", width=200)
 st.title("Oratis – Coach IA Marcopolo")
-st.markdown("Bienvenue dans Oratis, ton formateur IA qui t’aide à bien dire.")
+st.write("Bienvenue dans Oratis, ton formateur IA qui t’aide à bien dire.")
 
-# Récupération sécurisée de la clé API (via secrets Streamlit Cloud)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-# Phase 1 : Question utilisateur
+# Phase 1 : Demande utilisateur
 st.header("1. Pose ta question")
 user_question = st.text_input("Quel est ton besoin ? (ex: Comment recadrer un collaborateur ?)")
 
 if user_question:
-    # Phase 2 : Analyse de la méthode adaptée
+    # Phase 2 : Méthode proposée
     st.header("2. Méthode proposée par Oratis")
-    with st.spinner("Oratis réfléchit à la méthode la plus adaptée..."):
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": (
-                    "Tu es un formateur Marcopolo. En fonction du besoin exprimé par l'utilisateur, "
-                    "tu choisis la méthode la plus adaptée parmi : DESC (recadrage), SMART (objectifs), "
-                    "OPA (questionnement), CAB (argumentaire), QQOQCP (analyse), SONCAS (décision), "
-                    "BBR (objections), Écoute active, Feedback positif, Reformulation. "
-                    "Explique ton choix avec pédagogie.")},
-                {"role": "user", "content": user_question}
-            ],
-            temperature=0.7,
-            max_tokens=400
-        )
-        method_response = response.choices[0].message.content.strip()
-    st.success(method_response)
 
-    # Phase 3 : Exemple illustré (placeholder)
-    st.header("3. Exemple illustré")
-    st.info("Exemple : 'Claire, j’ai remarqué que tu rends souvent les dossiers en retard (Décrire)...'")
+    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-    # Phase 4 : Simulation utilisateur
-    st.header("4. Mise en situation")
-    user_reply = st.text_area("Imagine que tu t’adresses à ton interlocuteur. Que lui dirais-tu ?", height=150)
+    prompt_method = f"""
+    Tu es un formateur Marcopolo. Ta mission est d'analyser une problématique d'utilisateur et de recommander 
+    une méthode d'accompagnement adaptée (ex: DESC, OPA, SMART, QQOQCCP...).
 
-    # Phase 5 : Feedback IA personnalisé avec GPT-4 Turbo
-import openai
+    Problématique : {user_question}
 
-if user_reply:
-    st.header("5. Feedback Oratis")
-
-    prompt = f"""
-   Tu es un formateur Marcopolo. Tu vas évaluer un message selon la méthode {detected_method}.
-
-    Message de l'utilisateur :
-    """{user_reply}"""
-
-
-    Ton retour doit :
-    - Dire si les 4 parties sont présentes
-    - Donner un conseil de formulation s’il manque quelque chose
-    - Être bienveillant, structurant, formateur
+    Donne une explication claire, pédagogique et structurée de la méthode choisie.
     """
 
-    response = client.chat.completions.create(
+    response_method = client.chat.completions.create(
         model="gpt-4-turbo",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "user", "content": prompt_method}],
         temperature=0.7,
-        max_tokens=500,
+        max_tokens=700,
     )
 
-    feedback = response.choices[0].message.content
-    st.success(feedback)
+    method_explanation = response_method.choices[0].message.content
+    st.success(method_explanation)
+
+    # Phase 3 : Exemple illustré
+    st.header("3. Exemple illustré")
+
+    prompt_example = f"""
+    En te basant sur la méthode proposée précédemment, écris un exemple concret de ce que dirait un manager dans ce cas :
+    "{user_question}"
+
+    Sois clair, bienveillant, crédible et proche de la réalité terrain.
+    """
+
+    response_example = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": prompt_example}],
+        temperature=0.7,
+        max_tokens=300,
+    )
+
+    example_text = response_example.choices[0].message.content
+    st.info(example_text)
+
+    # Phase 4 : Mise en situation
+    st.header("4. Mise en situation")
+    user_reply = st.text_area("Imagine que tu parles à ton collaborateur. Que lui dirais-tu ?", height=150)
+
+    # Phase 5 : Feedback IA
+    if user_reply:
+        st.header("5. Feedback Oratis")
+
+        prompt_feedback = f"""
+        Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
+        Message de l'utilisateur :
+        """{user_reply}"""
+
+        Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui ce qui fonctionne, 
+        ce qui pourrait être amélioré, et propose des formulations plus efficaces si besoin.
+        """
+
+        response_feedback = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt_feedback}],
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+        feedback = response_feedback.choices[0].message.content
+        st.success(feedback)
