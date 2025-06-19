@@ -58,24 +58,23 @@ if user_question:
     user_reply = st.text_area("Imagine que tu parles à ton collaborateur. Que lui dirais-tu ?", height=150)
 
     # Phase 5 : Feedback IA
-    if user_reply:
-        st.header("5. Feedback Oratis")
+ if user_reply:
+    st.header("5. Feedback Oratis")
 
-        prompt_feedback = f"""
-        Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
-        Message de l'utilisateur :
-        """{user_reply}"""
+    prompt_feedback = f"""Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
+Message de l'utilisateur :
+{user_reply}
 
-        Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui ce qui fonctionne, 
-        ce qui pourrait être amélioré, et propose des formulations plus efficaces si besoin.
-        """
+Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui ce qui fonctionne,
+ce qui pourrait être amélioré, et propose des formulations plus efficaces si besoin.
+"""
 
-        response_feedback = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": prompt_feedback}],
-            temperature=0.7,
-            max_tokens=500,
-        )
+    response_feedback = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": prompt_feedback}],
+        temperature=0.7,
+        max_tokens=500,
+    )
 
-        feedback = response_feedback.choices[0].message.content
-        st.success(feedback)
+    feedback_text = response_feedback.choices[0].message.content
+    st.success(feedback_text)
