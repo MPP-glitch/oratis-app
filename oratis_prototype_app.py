@@ -1,4 +1,3 @@
-
 import streamlit as st
 import openai
 import requests
@@ -83,6 +82,7 @@ if user_question:
 
     example_text = response_example.choices[0].message.content
     st.info(example_text)
+    jouer_voix_elevenlabs(example_text)  # 🔊 Ajout de l'audio pour la phase 3
 
     # Phase 4 : Mise en situation
     st.header("4. Mise en situation")
