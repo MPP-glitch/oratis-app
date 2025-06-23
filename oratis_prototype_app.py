@@ -1,14 +1,16 @@
+
 import streamlit as st
 import openai
 import requests
-from io import BytesIO
 
 st.title("Oratis – Coach IA Marcopolo")
+st.write("Bienvenue dans Oratis, ton formateur IA qui t’aide à bien dire.")
 
-# Fonction pour générer l'audio avec ElevenLabs
-def generate_audio(text):
+# Fonction voix ElevenLabs
+def jouer_voix_elevenlabs(texte):
     api_key = st.secrets["ELEVEN_API_KEY"]
-    voice_id = "Rachel"  # Voix par défaut
+    voice_id = "EXAVITQu4vr4xnSDxMaL"  # Voix Rachel
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 
     headers = {
@@ -16,23 +18,23 @@ def generate_audio(text):
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "text": text,
-        "model_id": "eleven_monolingual_v1",
+    data = {
+        "text": texte,
         "voice_settings": {
             "stability": 0.5,
             "similarity_boost": 0.75
         }
     }
 
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        return BytesIO(response.content)
-    else:
-        st.error("Erreur lors de la génération audio")
-        return None
+    response = requests.post(url, json=data, headers=headers)
 
-# Phase 1: Demande utilisateur
+    if response.status_code == 200:
+        audio_bytes = response.content
+        st.audio(audio_bytes, format="audio/mp3")
+    else:
+        st.error("La voix d'Oratis n'a pas pu être générée.")
+
+# Phase 1 : Demande utilisateur
 st.header("1. Pose ta question")
 user_question = st.text_input("Quel est ton besoin ? (ex: Comment recadrer un collaborateur ?)")
 
@@ -60,6 +62,7 @@ if user_question:
 
     method_explanation = response_method.choices[0].message.content
     st.success(method_explanation)
+    jouer_voix_elevenlabs(method_explanation)
 
     # Phase 3 : Exemple illustré
     st.header("3. Exemple illustré")
@@ -81,22 +84,16 @@ if user_question:
     example_text = response_example.choices[0].message.content
     st.info(example_text)
 
-    # 🔊 Lecture audio de l'exemple
-    audio_example = generate_audio(example_text)
-    if audio_example:
-        st.audio(audio_example, format="audio/mp3")
-
     # Phase 4 : Mise en situation
     st.header("4. Mise en situation")
     user_reply = st.text_area("Imagine que tu parles à ton collaborateur. Que lui dirais-tu ?", height=150)
 
+    # Phase 5 : Feedback IA
     if user_reply:
-        # Phase 5 : Feedback IA
         st.header("5. Feedback Oratis")
 
         prompt_feedback = f"""
         Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
-
         Message de l'utilisateur :
         {user_reply}
 
@@ -113,3 +110,4 @@ if user_question:
 
         feedback = response_feedback.choices[0].message.content
         st.success(feedback)
+        jouer_voix_elevenlabs(feedback)
