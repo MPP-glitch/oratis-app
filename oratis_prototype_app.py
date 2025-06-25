@@ -136,4 +136,5 @@ if user_question:
     # Phase 5 : Feedback
     st.header("5. Feedback Oratis")
     if st.session_state.messages:
-        last_user_inputs = "\n".join(f"{r}: {m}" for r, m in st.session_stat_
+        last_user_inputs = "\n".join(f"{r}: {m}" for r, m in st.session_state.messages if r == "Moi")
+
