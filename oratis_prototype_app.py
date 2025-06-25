@@ -93,11 +93,14 @@ if user_question:
         st.session_state.history = []
 
         if st.session_state.oratis_starts:
-            prompt_start = f"""
-            Tu es un collaborateur simulé. Réponds avec empathie et professionnalisme.
-            Voici la demande du manager : {user_question}
-            Commence la conversation comme si tu venais de recevoir ce message oralement.
+           prompt_start = f"""
+            Tu es un collaborateur simulé dans une entreprise. Tu viens d'être contacté par ton manager 
+            pour discuter d’un sujet important. Commence la conversation naturellement, de manière humaine 
+            et professionnelle. Ne donne pas de conseils ou de méthode, reste dans ton rôle de collaborateur.
+            
+            Commence simplement par un « bonjour » et propose d’échanger ou demande comment tu peux aider.
             """
+
             response_oratis = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[{"role": "user", "content": prompt_start}],
