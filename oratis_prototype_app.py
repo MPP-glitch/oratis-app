@@ -85,29 +85,61 @@ if user_question:
     jouer_voix_elevenlabs(example_text)  # 🔊 Ajout de l'audio pour la phase 3
 
     # Phase 4 : Mise en situation
-    st.header("4. Mise en situation")
-    user_reply = st.text_area("Imagine que tu parles à ton collaborateur. Que lui dirais-tu ?", height=150)
+ # Phase 4 : Simulation libre (dialogue dynamique)
+st.header("4. Simulation avec Oratis")
 
-    # Phase 5 : Feedback IA
-    if user_reply:
-        st.header("5. Feedback Oratis")
+if "dialogue" not in st.session_state:
+    st.session_state.dialogue = []
 
-        prompt_feedback = f"""
-        Tu es un formateur Marcopolo. Tu vas évaluer ce message en lien avec la méthode proposée précédemment.
-        Message de l'utilisateur :
-        {user_reply}
+if "start_by" not in st.session_state:
+    st.session_state.start_by = None
 
-        Donne un retour structuré et bienveillant à l'utilisateur. Dis-lui ce qui fonctionne, 
-        ce qui pourrait être amélioré, et propose des formulations plus efficaces si besoin.
-        """
+if st.session_state.start_by is None:
+    start_choice = st.radio("Qui commence la conversation ?", ["Moi", "Oratis"])
+    if st.button("Lancer la simulation"):
+        st.session_state.start_by = start_choice
+        if start_choice == "Oratis":
+            opening_line = f"Bonjour, concernant votre problématique « {user_question} », pouvez-vous m'expliquer comment vous souhaitez procéder ?"
+            st.session_state.dialogue.append(("Oratis", opening_line))
 
-        response_feedback = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": prompt_feedback}],
-            temperature=0.7,
-            max_tokens=500,
-        )
+# Affichage du dialogue existant
+for speaker, msg in st.session_state.dialogue:
+    if speaker == "Oratis":
+        st.markdown(f"**🧠 Oratis :** {msg}")
+    else:
+        st.markdown(f"**🗣️ Vous :** {msg}")
 
-        feedback = response_feedback.choices[0].message.content
-        st.success(feedback)
-        jouer_voix_elevenlabs(feedback)
+# Entrée utilisateur
+if st.session_state.start_by:
+    user_input = st.text_input("Votre message :", key="simulation_input")
+    if st.button("Envoyer", key="send_simulation"):
+        if user_input:
+            st.session_state.dialogue.append(("Vous", user_input))
+
+            # Construction du prompt avec historique
+            historique = ""
+            for speaker, msg in st.session_state.dialogue:
+                prefix = "Collaborateur" if speaker == "Oratis" else "Utilisateur"
+                historique += f"{prefix} : {msg}\n"
+
+            prompt_oratis = f"""
+Tu joues le rôle d'un collaborateur ou prospect dans une simulation pédagogique avec un apprenant.
+Tu dois répondre de façon réaliste, bienveillante, et engager la conversation.
+Tu adaptes ton style en fonction de cette méthode : {method_explanation[:300]}...
+
+Voici l’historique de l’échange :
+{historique}
+
+Formule une réponse courte (1 à 3 phrases), naturelle, humaine, en cohérence avec la méthode et la problématique.
+"""
+
+            response_simulation = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[{"role": "user", "content": prompt_oratis}],
+                temperature=0.7,
+                max_tokens=300,
+            )
+
+            oratis_reply = response_simulation.choices[0].message.content.strip()
+            st.session_state.dialogue.append(("Oratis", oratis_reply))
+
