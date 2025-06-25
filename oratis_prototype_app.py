@@ -79,61 +79,65 @@ if user_question:
     st.info(example_text)
     jouer_voix_elevenlabs(example_text)
 
-    # Phase 4 : Simulation
-    st.header("4. Simulation avec Oratis")
+    # Phase 4 : Simulation avec Oratis
+st.header("4. Simulation avec Oratis")
+st.write("Qui commence la conversation ?")
 
-    if "history" not in st.session_state:
-        st.session_state.history = []
-    if "oratis_starts" not in st.session_state:
-        st.session_state.oratis_starts = False
+start_choice = st.radio("", ["Moi", "Oratis"])
+oratis_starts = start_choice == "Oratis"
 
-    choix = st.radio("Qui commence la conversation ?", ["Moi", "Oratis"])
-    if st.button("Lancer la simulation"):
-        st.session_state.oratis_starts = choix == "Oratis"
-        st.session_state.history = []
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-        if st.session_state.oratis_starts:
-           prompt_start = f"""
-            Tu es un collaborateur simulé dans une entreprise. Tu viens d'être contacté par ton manager 
-            pour discuter d’un sujet important. Commence la conversation naturellement, de manière humaine 
-            et professionnelle. Ne donne pas de conseils ou de méthode, reste dans ton rôle de collaborateur.
-            
-            Commence simplement par un « bonjour » et propose d’échanger ou demande comment tu peux aider.
-            """
+if st.button("Lancer la simulation"):
+    if oratis_starts:
+        prompt_start = """
+Tu es un collaborateur simulé dans une entreprise. Tu viens d'être contacté par ton manager 
+pour discuter d’un sujet important. Commence la conversation naturellement, de manière humaine 
+et professionnelle. Ne donne pas de conseils ou de méthode, reste dans ton rôle de collaborateur.
 
-            response_oratis = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[{"role": "user", "content": prompt_start}],
-                temperature=0.7,
-                max_tokens=300,
-            )
-            debut = response_oratis.choices[0].message.content
-            st.session_state.history.append(("Oratis", debut))
+Commence simplement par un « bonjour » et propose d’échanger ou demande comment tu peux aider.
+"""
+        response_oratis = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt_start}],
+            temperature=0.7,
+            max_tokens=500,
+        )
+        first_msg = response_oratis.choices[0].message.content.strip()
+        st.session_state.chat_history.append(("Oratis", first_msg))
 
-    if st.session_state.history:
-        for role, message in st.session_state.history:
-            if role == "Moi":
-                st.markdown(f"**Moi** : {message}")
-            else:
-                st.markdown(f"**Oratis** : {message}")
+# Interface d'échange
+for role, msg in st.session_state.chat_history:
+    if role == "Moi":
+        st.markdown(f"**Moi** : {msg}")
+    else:
+        st.markdown(f"**Oratis** : {msg}")
 
-        user_msg = st.text_input("Votre message :")
-        if st.button("Envoyer"):
-            st.session_state.history.append(("Moi", user_msg))
+user_msg = st.text_input("Votre message :")
 
-            history = "\n".join([f"{r}: {m}" for r, m in st.session_state.history])
-            prompt_continu = f"Voici la discussion en cours :\n{history}\nTu es un collaborateur simulé. Réponds avec empathie et professionnalisme."
+if st.button("Envoyer"):
+    if user_msg:
+        st.session_state.chat_history.append(("Moi", user_msg))
 
-            response_suite = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[{"role": "user", "content": prompt_continu}],
-                temperature=0.7,
-                max_tokens=300,
-            )
+        # Crée le prompt basé sur l'historique
+        history = "\n".join([f"{r} : {m}" for r, m in st.session_state.chat_history])
+        prompt_continu = f"""Voici la discussion en cours :\n{history}\n
+Tu es un collaborateur simulé. Réponds avec empathie et professionnalisme.
+Sois concis, humain, et reste dans ton rôle. Ne donne pas de conseils.
+"""
 
-            oratis_reply = response_suite.choices[0].message.content
-            st.session_state.history.append(("Oratis", oratis_reply))
+        response_oratis = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt_continu}],
+            temperature=0.7,
+            max_tokens=400,
+        )
 
+        oratis_reply = response_oratis.choices[0].message.content.strip()
+        st.session_state.chat_history.append(("Oratis", oratis_reply))
+
+        
     # Phase 5 : Feedback
     st.header("5. Feedback Oratis")
 
