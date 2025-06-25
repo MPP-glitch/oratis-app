@@ -119,7 +119,7 @@ if user_question:
     if submit_new and user_new_message:
         st.session_state.messages.append(("Moi", user_new_message))
         history = "\n".join(f"{r}: {m}" for r, m in st.session_state.messages)
-        prompt_continu = f"Voici la discussion en cours :\n{history}\n
+        prompt_continu = f"Voici la discussion en cours :\n{history}\n"
 Tu es un collaborateur simulé. Réponds avec empathie et professionnalisme."
         response = client.chat.completions.create(
             model="gpt-4-turbo",
