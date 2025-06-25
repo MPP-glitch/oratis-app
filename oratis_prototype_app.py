@@ -143,3 +143,42 @@ Formule une réponse courte (1 à 3 phrases), naturelle, humaine, en cohérence 
             oratis_reply = response_simulation.choices[0].message.content.strip()
             st.session_state.dialogue.append(("Oratis", oratis_reply))
 
+# Phase 5 : Feedback Oratis
+st.header("5. Feedback Oratis")
+
+if st.session_state.get("dialogue"):
+    # Construction de l'historique pour évaluation
+    historique = ""
+    for speaker, msg in st.session_state.dialogue:
+        prefix = "Collaborateur" if speaker == "Oratis" else "Utilisateur"
+        historique += f"{prefix} : {msg}\n"
+
+    prompt_feedback = f"""
+Tu es un formateur Marcopolo. Tu vas évaluer l’ensemble de cet échange entre un utilisateur et un collaborateur simulé.
+
+Voici la méthode que l’utilisateur devait appliquer :
+{method_explanation[:300]}...
+
+Voici l’historique de la simulation :
+{historique}
+
+Fais un retour structuré et bienveillant à l'utilisateur. Dis-lui :
+- ce qu'il a bien fait
+- ce qu'il peut améliorer
+- propose des formulations plus efficaces si besoin
+
+Sois encourageant et formateur.
+"""
+
+    response_feedback = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": prompt_feedback}],
+        temperature=0.7,
+        max_tokens=500,
+    )
+
+    feedback = response_feedback.choices[0].message.content.strip()
+    st.success(feedback)
+
+    # Lecture audio facultative
+    jouer_voix_elevenlabs(feedback)
