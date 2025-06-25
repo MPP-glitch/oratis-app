@@ -2,21 +2,20 @@ import streamlit as st
 import openai
 import requests
 
-# Titre
-st.title("Oratis – Coach IA Marcopolo")
-st.write("Bienvenue dans Oratis, ton formateur IA qui t’aide à bien dire.")
+st.set_page_config(page_title="Oratis – Coach IA Marcopolo")
 
-# Initialisation des variables de session
+# Initialisation des états de session
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "oratis_starts" not in st.session_state:
     st.session_state.oratis_starts = False
 
-# Fonction voix ElevenLabs
+# Fonctions
+
 def jouer_voix_elevenlabs(texte):
     api_key = st.secrets["ELEVEN_API_KEY"]
-    voice_id = "EXAVITQu4vr4xnSDxMaL"  # Rachel
+    voice_id = "EXAVITQu4vr4xnSDxMaL"  # Voix Rachel
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
@@ -30,25 +29,30 @@ def jouer_voix_elevenlabs(texte):
             "similarity_boost": 0.75
         }
     }
-
     response = requests.post(url, json=data, headers=headers)
+
     if response.status_code == 200:
-        st.audio(response.content, format="audio/mp3")
+        audio_bytes = response.content
+        st.audio(audio_bytes, format="audio/mp3")
     else:
         st.error("La voix d'Oratis n'a pas pu être générée.")
 
-# Phase 1 : Demande
+client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+# Titre
+st.title("Oratis – Coach IA Marcopolo")
+st.write("Bienvenue dans Oratis, ton formateur IA qui t’aide à bien dire.")
+
+# PHASE 1 : Demande utilisateur
 st.header("1. Pose ta question")
 user_question = st.text_input("Quel est ton besoin ? (ex: Comment recadrer un collaborateur ?)")
 
+# PHASE 2 : Méthode proposée
 if user_question:
-    # Phase 2 : Méthode
     st.header("2. Méthode proposée par Oratis")
-
-    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     prompt_method = f"""
     Tu es un formateur Marcopolo. Ta mission est d'analyser une problématique d'utilisateur et de recommander 
-    une méthode d'accompagnement adaptée (ex: DESC, OPA, SMART, etc.).
+    une méthode d'accompagnement adaptée (ex: DESC, OPA, SMART...).
 
     Problématique : {user_question}
 
@@ -64,13 +68,11 @@ if user_question:
     st.success(method_explanation)
     jouer_voix_elevenlabs(method_explanation)
 
-    # Phase 3 : Exemple illustré
+    # PHASE 3 : Exemple illustré
     st.header("3. Exemple illustré")
     prompt_example = f"""
-    En te basant sur la méthode proposée précédemment, écris un exemple concret de ce que dirait un manager dans ce cas :
-    "{user_question}"
-
-    Sois clair, bienveillant, crédible et proche de la réalité terrain.
+    En te basant sur la méthode précédemment expliquée, écris un exemple de message qu'un manager pourrait dire dans ce cas :
+    {user_question}
     """
     response_example = client.chat.completions.create(
         model="gpt-4-turbo",
@@ -80,61 +82,77 @@ if user_question:
     )
     example_text = response_example.choices[0].message.content
     st.info(example_text)
-    jouer_voix_elevenlabs(example_text)
+    try:
+        jouer_voix_elevenlabs(example_text)
+    except:
+        st.error("La voix d'Oratis n'a pas pu être générée.")
 
-    # Phase 4 : Simulation avec Oratis
+    # PHASE 4 : Simulation
     st.header("4. Simulation avec Oratis")
-    starter = st.radio("Qui commence la conversation ?", ["Moi", "Oratis"])
-
+    start_choice = st.radio("Qui commence la conversation ?", ["Moi", "Oratis"])
     if st.button("Lancer la simulation"):
-        st.session_state.oratis_starts = starter == "Oratis"
         st.session_state.messages = []
-
-    if st.session_state.oratis_starts and not st.session_state.messages:
-        ouverture = f"""
-        Tu es un collaborateur professionnel qui joue un rôle dans une simulation.
-        L'utilisateur souhaite s'entraîner à s'exprimer selon la méthode vue précédemment.
-
-        Commence la conversation comme un collaborateur qui pourrait être concerné par la situation.
-        """
-        r = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": ouverture}],
-            temperature=0.7,
-            max_tokens=300,
-        )
-        intro = r.choices[0].message.content
-        st.session_state.messages.append(("Oratis", intro))
-
-    user_msg = st.text_input("Votre message :", key="simulation_input")
-    if st.button("Envoyer"):
-        if user_msg:
-            st.session_state.messages.append(("Moi", user_msg))
-            context = "\n".join(f"{role} : {msg}" for role, msg in st.session_state.messages)
-            prompt_simulation = f"""
-            Tu es un collaborateur qui réponds dans un jeu de rôle. Sois réaliste, humain, bienveillant mais un peu résistant si nécessaire.
-
-            Conversation en cours :
-            {context}
-            """
-            r = client.chat.completions.create(
+        st.session_state.oratis_starts = start_choice == "Oratis"
+        if st.session_state.oratis_starts:
+            init_prompt = f"Tu es un collaborateur simulé. Réponds de façon naturelle, professionnelle et constructive. Contexte : {user_question}"
+            response = client.chat.completions.create(
                 model="gpt-4-turbo",
-                messages=[{"role": "user", "content": prompt_simulation}],
+                messages=[{"role": "user", "content": init_prompt}],
                 temperature=0.7,
                 max_tokens=300,
             )
-            reply = r.choices[0].message.content
-            st.session_state.messages.append(("Oratis", reply))
+            oratis_first = response.choices[0].message.content
+            st.session_state.messages.append(("Oratis", oratis_first))
 
-    for role, msg in st.session_state.messages:
-        if role == "Moi":
-            st.markdown(f"**Moi :** {msg}")
+    # Affichage de la conversation
+    for r, m in st.session_state.messages:
+        if r == "Moi":
+            st.markdown(f"**Moi** : {m}")
         else:
-            st.markdown(f"**Oratis :** {msg}")
-            jouer_voix_elevenlabs(msg)
+            st.markdown(f"**Oratis** : {m}")
 
-    # Phase 5 : Feedback
+    # Champ de réponse
+    with st.form("new_message_form"):
+        user_new_message = st.text_area("Votre message :", key="new_message")
+        submit_new = st.form_submit_button("Envoyer")
+
+    if submit_new and user_new_message:
+        st.session_state.messages.append(("Moi", user_new_message))
+        history = "\n".join(f"{r}: {m}" for r, m in st.session_state.messages)
+        prompt_continu = f"Voici la discussion en cours :\n{history}\n
+Tu es un collaborateur simulé. Réponds avec empathie et professionnalisme."
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt_continu}],
+            temperature=0.7,
+            max_tokens=300,
+        )
+        oratis_reply = response.choices[0].message.content
+        st.session_state.messages.append(("Oratis", oratis_reply))
+
+    # PHASE 5 : Feedback sur la communication
     st.header("5. Feedback Oratis")
-    if st.session_state.messages:
+    if st.button("Obtenir un feedback d'Oratis sur ma communication"):
         last_user_inputs = "\n".join(f"{r}: {m}" for r, m in st.session_state.messages if r == "Moi")
+        prompt_feedback = f"""
+        Tu es un formateur Marcopolo. Tu vas évaluer la qualité de la communication de l'utilisateur 
+        dans cette discussion selon la méthode choisie plus haut. 
 
+        Voici ses messages :
+        {last_user_inputs}
+
+        Donne un retour structuré et bienveillant. Décris ce qui fonctionne, ce qui peut être amélioré, 
+        et propose une reformulation possible.
+        """
+        feedback = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt_feedback}],
+            temperature=0.7,
+            max_tokens=500,
+        )
+        final_feedback = feedback.choices[0].message.content
+        st.success(final_feedback)
+        try:
+            jouer_voix_elevenlabs(final_feedback)
+        except:
+            st.error("La voix d'Oratis n'a pas pu être générée.")
